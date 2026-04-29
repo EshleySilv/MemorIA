@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudar - {{ materia.nome }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Estudar {{ materia.nome }}</h1>
+<p>Responda mentalmente, vire o card e avalie sua resposta.</p>
+
+<div class="card">
+    {% for card in flashcards %}
+    <div class="flashcard {% if loop.first %}ativo{% endif %}" onclick="virar(this)">
+        <div class="frente">
+            {{ card.pergunta }}
+        </div>
+
+        <div class="verso">
+            <p>{{ card.resposta }}</p>
+
+            <div class="acoes">
+                <button onclick="avaliar(event, '{{ card.id }}', 'facil')">Fácil</button>
+                <button onclick="avaliar(event, '{{ card.id }}', 'medio')">Médio</button>
+                <button onclick="avaliar(event, '{{ card.id }}', 'dificil')">Difícil</button>
+                <button onclick="avaliar(event, '{{ card.id }}', 'errei')">Errei</button>
+            </div>
+
+            <div class="feedback"></div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not flashcards %}
+    <p><p>Você não tem revisões para hoje 🎉</p>
+    {% endif %}
+</div>
+
+<a class="voltar" href="/">← Voltar</a>
+
+</div>
+
+<script>
+function virar(card){
+    card.classList.toggle("virado");
+}
+
+function avaliar(event, cardId, tipo){
+    event.stopPropagation();
+
+    const card = event.target.closest(".flashcard");
+    const botoes = card.querySelectorAll("button");
+    const feedback = card.querySelector(".feedback");
+
+    fetch("/avaliar", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            card_id: parseInt(cardId),
+            tipo: tipo
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        // desativa botões
+        botoes.forEach(botao => botao.disabled = true);
+
+        // mostra feedback
+        feedback.innerHTML = `
+            <p>Próxima revisão em <strong>${data.dias} dias</strong></p>
+            <p>Data: ${data.data}</p>
+            <button onclick="proximoCard(this)">Próximo card</button>
+        `;
+    });
+}
+
+function proximoCard(botao){
+    const cardAtual = botao.closest(".flashcard");
+    const proximo = cardAtual.nextElementSibling;
+
+    cardAtual.classList.remove("ativo");
+    cardAtual.style.display = "none";
+
+    if(proximo && proximo.classList.contains("flashcard")){
+        proximo.classList.add("ativo");
+        proximo.style.display = "block";
+    } else {
+        const container = cardAtual.parentElement;
+        container.innerHTML = "<p>Você concluiu a revisão deste deck 🎉</p>";
+    }
+}
+</script>
+
+</body>
+</html>

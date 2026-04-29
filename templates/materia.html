@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ materia.nome }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<h1>{{ materia.nome }}</h1>
+<p>Gerencie seus flashcards.</p>
+
+<div class="card">
+
+<form method="POST" action="/criar-flashcard/{{ materia.id }}">
+<input type="text" name="pergunta" placeholder="Pergunta" required>
+
+<textarea name="resposta" placeholder="Resposta" required></textarea>
+
+<button type="submit">Salvar Flashcard</button>
+</form>
+
+</div>
+
+<br>
+
+<div class="card">
+    <h2>Flashcards</h2>
+
+{% for card in flashcards %}
+<div class="item">
+    <strong>{{ card.pergunta }}</strong>
+    <p>{{ card.resposta }}</p>
+
+    <div class="card-actions">
+        <a href="/excluir-card/{{ card.id }}/{{ materia.id }}">Excluir</a>
+    </div>
+</div>
+{% endfor %}
+
+    {% if not flashcards %}
+    <p>Nenhum flashcard ainda.</p>
+    {% endif %}
+</div>
+
+<br>
+<a href="/">← Voltar</a>
+
+</div>

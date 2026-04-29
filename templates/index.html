@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MemorIA</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<script>
+function abrirMenu(event, botao){
+    event.stopPropagation();
+
+    let menu = botao.nextElementSibling;
+    menu.classList.toggle("mostrar");
+}
+
+document.addEventListener("click", function(){
+    document.querySelectorAll(".menu-opcoes").forEach(menu => {
+        menu.classList.remove("mostrar");
+    });
+});
+</script>
+<body>
+
+<div class="container">
+
+<h1>MemorIA</h1>
+<p>Seu sistema inteligente de estudos.</p>
+
+<div class="card">
+<form method="POST" action="/criar-materia">
+    <input type="text" name="nome" placeholder="Nome do Deck" required>
+    <button type="submit">Criar Deck</button>
+</form>
+
+<br>
+<h2>Decks Criados</h2>
+
+{% for materia in materias %}
+<div class="deck-card">
+    <div>
+        <h3>{{ materia.nome }}</h3>
+        <p>
+            {{ materia.total }} flashcards • 
+            {{ materia.revisar or 0 }} para revisar hoje
+        </p>
+    </div>
+
+    <div class="deck-right">
+        <a class="btn-estudar" href="/estudar/{{ materia.id }}">Estudar</a>
+
+        <div class="menu">
+            <button class="menu-btn" onclick="abrirMenu(event, this)">⋮</button>
+
+            <div class="menu-opcoes">
+                <a href="/materia/{{ materia.id }}">Editar deck</a>
+                <a href="/excluir-materia/{{ materia.id }}">Excluir deck</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% if not materias %}
+<p>Nenhuma matéria cadastrada ainda.</p>
+{% endif %}
+
+</div>
+
+</div>
+
+</body>
+</html>
