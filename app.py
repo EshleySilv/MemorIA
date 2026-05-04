@@ -209,6 +209,66 @@ def avaliar():
     conn.close()
 
     return {"status": "ok", "dias": dias, "data": proxima_data_str}
+@app.route("/dashboard/<int:id>")
+def dashboard(id):
+    from datetime import datetime
+
+    conn = conectar()
+
+    materia = conn.execute(
+        "SELECT * FROM materias WHERE id = ?",
+        (id,)
+    ).fetchone()
+
+    dados = conn.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(acertos) as acertos,
+            SUM(erros) as erros
+        FROM flashcards
+        WHERE materia_id = ?
+    """, (id,)).fetchone()
+
+    total = dados["total"] or 0
+    acertos = dados["acertos"] or 0
+    erros = dados["erros"] or 0
+
+    taxa = 0
+    if (acertos + erros) > 0:
+        taxa = int((acertos / (acertos + erros)) * 100)
+
+    hoje = datetime.now().strftime("%Y-%m-%d")
+
+    revisar_hoje = conn.execute("""
+        SELECT COUNT(*) as total
+        FROM flashcards
+        WHERE materia_id = ?
+        AND (
+            proxima_revisao IS NULL
+            OR proxima_revisao <= ?
+        )
+    """, (id, hoje)).fetchone()["total"]
+
+    dificeis = conn.execute("""
+        SELECT pergunta, erros
+        FROM flashcards
+        WHERE materia_id = ?
+        ORDER BY erros DESC
+        LIMIT 3
+    """, (id,)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        materia=materia,
+        total=total,
+        acertos=acertos,
+        erros=erros,
+        taxa=taxa,
+        revisar_hoje=revisar_hoje,
+        dificeis=dificeis
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

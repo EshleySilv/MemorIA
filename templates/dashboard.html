@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Dashboard - {{ materia.nome }}</h1>
+
+<div class="dashboard-layout">
+
+    <div class="dashboard-info">
+
+        <div class="dashboard-card">
+            <p><strong>Total de cards:</strong> {{ total }}</p>
+            <p><strong>Acertos:</strong> {{ acertos }}</p>
+            <p><strong>Erros:</strong> {{ erros }}</p>
+            <p><strong>Taxa de acerto:</strong> {{ taxa }}%</p>
+        </div>
+
+        <div class="dashboard-card">
+            <p><strong>Para revisar hoje:</strong> {{ revisar_hoje }}</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h2>Cards mais difíceis</h2>
+
+            {% for card in dificeis %}
+            <div class="card-dificil">
+                <strong>{{ card.pergunta }}</strong><br>
+                <small>{{ card.erros }} erros</small>
+            </div>
+            {% endfor %}
+
+            {% if not dificeis %}
+            <p>Nenhum dado ainda.</p>
+            {% endif %}
+        </div>
+
+        <a class="voltar" href="/">← Voltar</a>
+
+    </div>
+
+    <div class="grafico-container">
+        <canvas id="grafico"></canvas>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('grafico');
+
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Acertos', 'Erros'],
+        datasets: [{
+            data: [{{ acertos }}, {{ erros }}],
+        }]
+    }
+});
+</script>
+
+</body>
+</html>
