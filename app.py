@@ -1,8 +1,15 @@
 from flask import Flask, render_template, request, redirect
 from datetime import datetime, timedelta
 import sqlite3
+import google.generativeai as genai
 
 app = Flask(__name__)
+
+GEMINI_API_KEY = ""
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+modelo = genai.GenerativeModel("gemini-1.5-flash")
 
 def conectar():
     conn = sqlite3.connect("database.db")
@@ -52,10 +59,14 @@ def home():
             materias.nome,
             COUNT(flashcards.id) as total,
             SUM(
-                CASE 
-                    WHEN flashcards.proxima_revisao IS NULL 
-                    OR flashcards.proxima_revisao <= ?
-                    THEN 1 ELSE 0 
+                CASE
+                    WHEN flashcards.id IS NOT NULL
+                    AND (
+                        flashcards.proxima_revisao IS NULL
+                        OR flashcards.proxima_revisao <= ?
+                    )
+                    THEN 1
+                    ELSE 0
                 END
             ) as revisar
         FROM materias
@@ -67,6 +78,23 @@ def home():
     conn.close()
 
     return render_template("index.html", materias=materias)
+
+@app.route("/criar-materia", methods=["POST"])
+def criar_materia():
+
+    nome = request.form["nome"]
+
+    conn = conectar()
+
+    conn.execute(
+        "INSERT INTO materias (nome) VALUES (?)",
+        (nome,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
 
 @app.route("/materia/<int:id>")
 def abrir_materia(id):
@@ -270,5 +298,57 @@ def dashboard(id):
         dificeis=dificeis
     )
 
+@app.route("/gerar-flashcards/<int:id>", methods=["POST"])
+def gerar_flashcards(id):
+
+    tema = request.form["tema"]
+
+    prompt = f"""
+    Gere 5 flashcards sobre o tema:
+
+    {tema}
+
+    Responda SOMENTE neste formato:
+
+    PERGUNTA: pergunta aqui
+    RESPOSTA: resposta aqui
+
+    PERGUNTA: pergunta aqui
+    RESPOSTA: resposta aqui
+    """
+
+    resposta = modelo.generate_content(prompt)
+
+    texto = resposta.text
+
+    conn = conectar()
+
+    blocos = texto.split("PERGUNTA:")
+
+    for bloco in blocos:
+
+        bloco = bloco.strip()
+
+        if not bloco:
+            continue
+
+        partes = bloco.split("RESPOSTA:")
+
+        if len(partes) != 2:
+            continue
+
+        pergunta = partes[0].strip()
+        resposta_card = partes[1].strip()
+
+        conn.execute("""
+            INSERT INTO flashcards
+            (materia_id, pergunta, resposta)
+            VALUES (?, ?, ?)
+        """, (id, pergunta, resposta_card))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(f"/materia/{id}")
 if __name__ == "__main__":
     app.run(debug=True)
