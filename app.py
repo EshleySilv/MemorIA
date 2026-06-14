@@ -3,13 +3,20 @@ from datetime import datetime, timedelta
 import sqlite3
 import google.generativeai as genai
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+
 app = Flask(__name__)
 
-GEMINI_API_KEY = ""
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-modelo = genai.GenerativeModel("gemini-1.5-flash")
+modelo = genai.GenerativeModel("gemini-flash-latest")
 
 def conectar():
     conn = sqlite3.connect("database.db")
@@ -320,6 +327,9 @@ def gerar_flashcards(id):
     resposta = modelo.generate_content(prompt)
 
     texto = resposta.text
+    print("\n===== RESPOSTA GEMINI =====")
+    print(texto)
+    print("==========================\n")
 
     conn = conectar()
 
