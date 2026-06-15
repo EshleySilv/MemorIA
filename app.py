@@ -309,9 +309,10 @@ def dashboard(id):
 def gerar_flashcards(id):
 
     tema = request.form["tema"]
+    quantidade = request.form["quantidade"]
 
     prompt = f"""
-    Gere 5 flashcards sobre o tema:
+    Gere extamente {quantidade} flashcards sobre o tema:
 
     {tema}
 
