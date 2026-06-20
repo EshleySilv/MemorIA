@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect
 from datetime import datetime, timedelta
 import sqlite3
 import google.generativeai as genai
+from pypdf import PdfReader
 
 from dotenv import load_dotenv
 import os
@@ -305,16 +306,45 @@ def dashboard(id):
         dificeis=dificeis
     )
 
-@app.route("/gerar-flashcards/<int:id>", methods=["POST"])
-def gerar_flashcards(id):
 
-    tema = request.form["tema"]
-    quantidade = request.form["quantidade"]
 
+@app.route("/gerar-flashcards-ia/<int:id>", methods=["POST"])
+def gerar_flashcards_ia(id):
+
+    texto = request.form.get("texto", "").strip()
+    quantidade = request.form.get("quantidade", "5")
+
+    arquivo = request.files.get("arquivo")
+
+    conteudo = ""
+
+    if arquivo and arquivo.filename:
+
+        caminho = f"uploads/{arquivo.filename}"
+        arquivo.save(caminho)
+
+        leitor = PdfReader(caminho)
+
+        for pagina in leitor.pages:
+            conteudo += pagina.extract_text() or ""
+
+        conteudo = conteudo[:15000]
+        print("Usando PDF")
+
+    elif texto:
+
+        conteudo = texto
+        print("Usando resumo")
+
+    else:
+        return redirect(f"/materia/{id}")
+    
     prompt = f"""
-    Gere extamente {quantidade} flashcards sobre o tema:
+    Gere EXATAMENTE {quantidade} flashcards.
 
-    {tema}
+    Conteúdo:
+
+    {conteudo}
 
     Responda SOMENTE neste formato:
 
@@ -327,14 +357,11 @@ def gerar_flashcards(id):
 
     resposta = modelo.generate_content(prompt)
 
-    texto = resposta.text
-    print("\n===== RESPOSTA GEMINI =====")
-    print(texto)
-    print("==========================\n")
+    texto_gerado = resposta.text
 
     conn = conectar()
 
-    blocos = texto.split("PERGUNTA:")
+    blocos = texto_gerado.split("PERGUNTA:")
 
     for bloco in blocos:
 
@@ -361,5 +388,6 @@ def gerar_flashcards(id):
     conn.close()
 
     return redirect(f"/materia/{id}")
+
 if __name__ == "__main__":
     app.run(debug=True)

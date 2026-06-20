@@ -25,32 +25,43 @@
 
 </div>
 
+
+
+
 <div class="card">
 
-    <h2>Gerar Flashcards com IA</h2>
+    <h2>✨ Gerar Flashcards com IA</h2>
 
-    <form method="POST" action="/gerar-flashcards/{{ materia.id }}">
+    <form
+        method="POST"
+        action="/gerar-flashcards-ia/{{ materia.id }}"
+        enctype="multipart/form-data">
 
-        <input
-        type="text"
-        name="tema"
-        placeholder="Tema"
-        required
-        >
+        <textarea name="texto" placeholder="Digite um tema, cole um resumo ou envie um PDF para gerar flashcards automaticamente com IA."></textarea>
 
         <input
-        type="number"
-        name="quantidade"
-        placeholder="Quantidade de Flashcards"
-        min="1"
-        max="20"
-        value="5"
-        required
-        >
+            type="file"
+            name="arquivo"
+            accept=".pdf">
 
-        <button type="submit">
-        ✨ Gerar Flashcards
+        <input
+            type="number"
+            name="quantidade"
+            min="1"
+            max="20"
+            value="5"
+            required>
+
+        <button id="btn-gerar" type="submit">
+             Gerar Flashcards
         </button>
+        
+        <script>
+        document.querySelector("form").addEventListener("submit", function() {
+            document.getElementById("btn-gerar").innerText = "Gerando...";
+            document.getElementById("btn-gerar").disabled = true;
+        });
+        </script>
 
     </form>
 
