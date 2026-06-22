@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import sqlite3
 import google.generativeai as genai
 from pypdf import PdfReader
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from flask import send_file
 
 from dotenv import load_dotenv
 import os
@@ -207,6 +210,7 @@ def avaliar():
 
     card_id = data["card_id"]
     tipo = data["tipo"]
+    tempo = float(data.get("tempo", 0))
 
     # lógica simples de dias
     if tipo == "facil":
@@ -240,6 +244,13 @@ def avaliar():
                 proxima_revisao = ?
             WHERE id = ?
         """, (tipo, proxima_data_str, card_id))
+    conn.execute("""
+    UPDATE flashcards
+    SET
+        tempo_total = tempo_total + ?,
+        visualizacoes = visualizacoes + 1
+    WHERE id = ?
+    """, (tempo, card_id))
 
     conn.commit()
     conn.close()
@@ -250,6 +261,19 @@ def dashboard(id):
     from datetime import datetime
 
     conn = conectar()
+    tempo_medio = conn.execute("""
+    SELECT
+    AVG(
+        CASE
+            WHEN visualizacoes > 0
+            THEN tempo_total / visualizacoes
+        END
+    )
+    FROM flashcards
+    WHERE materia_id = ?
+    """, (id,)).fetchone()[0]
+
+    tempo_medio = round(tempo_medio or 0, 1)
 
     materia = conn.execute(
         "SELECT * FROM materias WHERE id = ?",
@@ -303,7 +327,8 @@ def dashboard(id):
         erros=erros,
         taxa=taxa,
         revisar_hoje=revisar_hoje,
-        dificeis=dificeis
+        dificeis=dificeis,
+        tempo_medio=tempo_medio
     )
 
 
@@ -388,6 +413,111 @@ def gerar_flashcards_ia(id):
     conn.close()
 
     return redirect(f"/materia/{id}")
+
+@app.route("/editar-card/<int:id>")
+def editar_card(id):
+
+    conn = conectar()
+
+    card = conn.execute("""
+        SELECT *
+        FROM flashcards
+        WHERE id = ?
+    """, (id,)).fetchone()
+
+    conn.close()
+
+    return render_template(
+        "editar_card.html",
+        card=card
+    )
+
+@app.route("/salvar-card/<int:id>", methods=["POST"])
+def salvar_card(id):
+
+    pergunta = request.form["pergunta"]
+    resposta = request.form["resposta"]
+
+    conn = conectar()
+
+    conn.execute("""
+        UPDATE flashcards
+        SET pergunta = ?, resposta = ?
+        WHERE id = ?
+    """, (pergunta, resposta, id))
+
+    conn.commit()
+
+    materia_id = conn.execute("""
+        SELECT materia_id
+        FROM flashcards
+        WHERE id = ?
+    """, (id,)).fetchone()[0]
+
+    conn.close()
+
+    return redirect(f"/materia/{materia_id}")
+
+@app.route("/exportar-pdf/<int:id>")
+def exportar_pdf(id):
+
+    conn = conectar()
+
+    materia = conn.execute("""
+        SELECT *
+        FROM materias
+        WHERE id = ?
+    """, (id,)).fetchone()
+
+    flashcards = conn.execute("""
+        SELECT *
+        FROM flashcards
+        WHERE materia_id = ?
+    """, (id,)).fetchall()
+
+    conn.close()
+
+    nome_arquivo = f"{materia['nome']}.pdf"
+
+    pdf = SimpleDocTemplate(nome_arquivo)
+
+    estilos = getSampleStyleSheet()
+
+    conteudo = []
+
+    conteudo.append(
+        Paragraph(
+            f"Deck: {materia['nome']}",
+            estilos["Title"]
+        )
+    )
+
+    conteudo.append(Spacer(1, 20))
+
+    for card in flashcards:
+
+        conteudo.append(
+            Paragraph(
+                f"<b>Pergunta:</b> {card['pergunta']}",
+                estilos["BodyText"]
+            )
+        )
+
+        conteudo.append(
+            Paragraph(
+                f"<b>Resposta:</b> {card['resposta']}",
+                estilos["BodyText"]
+            )
+        )
+
+        conteudo.append(Spacer(1, 12))
+
+    pdf.build(conteudo)
+
+    return send_file(
+        nome_arquivo,
+        as_attachment=True
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

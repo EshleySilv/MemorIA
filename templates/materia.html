@@ -55,13 +55,6 @@
         <button id="btn-gerar" type="submit">
              Gerar Flashcards
         </button>
-        
-        <script>
-        document.querySelector("form").addEventListener("submit", function() {
-            document.getElementById("btn-gerar").innerText = "Gerando...";
-            document.getElementById("btn-gerar").disabled = true;
-        });
-        </script>
 
     </form>
 
@@ -78,6 +71,7 @@
     <p>{{ card.resposta }}</p>
 
     <div class="card-actions">
+        <a href="/editar-card/{{ card.id }}">Editar</a>
         <a href="/excluir-card/{{ card.id }}/{{ materia.id }}">Excluir</a>
     </div>
 </div>
@@ -90,5 +84,21 @@
 
 <br>
 <a href="/">← Voltar</a>
+<a href="/exportar-pdf/{{ materia.id }}">
+    📄 Exportar PDF
+</a>
 
 </div>
+<script>
+document.querySelector('form[action^="/gerar-flashcards-ia"]').addEventListener('submit', function() {
+
+    const botao = document.getElementById('btn-gerar');
+
+    botao.innerText = '⏳ Gerando flashcards...';
+    botao.disabled = true;
+
+});
+</script>
+
+</body>
+</html>

@@ -45,8 +45,15 @@
 </div>
 
 <script>
+let inicio = Date.now();
+let tempoResposta = 0;
+
 function virar(card){
     card.classList.toggle("virado");
+    if(card.classList.contains("virado")){
+        tempoResposta = (Date.now() - inicio) / 1000;
+        console.log("Tempo:", tempoResposta);
+    }
 }
 
 function avaliar(event, cardId, tipo){
@@ -63,7 +70,8 @@ function avaliar(event, cardId, tipo){
         },
         body: JSON.stringify({
             card_id: parseInt(cardId),
-            tipo: tipo
+            tipo: tipo,
+            tempo: tempoResposta
         })
     })
     .then(res => res.json())
@@ -91,6 +99,9 @@ function proximoCard(botao){
     if(proximo && proximo.classList.contains("flashcard")){
         proximo.classList.add("ativo");
         proximo.style.display = "block";
+
+        inicio = Date.now();
+        tempoResposta = 0;
     } else {
         const container = cardAtual.parentElement;
         container.innerHTML = "<p>Você concluiu a revisão deste deck 🎉</p>";

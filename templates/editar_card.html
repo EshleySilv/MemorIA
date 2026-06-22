@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Editar Flashcard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Editar Flashcard</h1>
+
+<div class="card">
+
+<form method="POST" action="/salvar-card/{{ card.id }}">
+
+    <input
+        type="text"
+        name="pergunta"
+        value="{{ card.pergunta }}"
+        required>
+
+    <textarea
+        name="resposta"
+        required>{{ card.resposta }}</textarea>
+
+    <button type="submit">
+        Salvar Alterações
+    </button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+</html>
