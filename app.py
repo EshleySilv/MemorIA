@@ -47,7 +47,9 @@ def criar_tabelas():
         dificuldade TEXT DEFAULT 'nova',
         proxima_revisao TEXT,
         acertos INTEGER DEFAULT 0,
-        erros INTEGER DEFAULT 0
+        erros INTEGER DEFAULT 0,
+        tempo_total REAL DEFAULT 0,
+        visualizacoes INTEGER DEFAULT 0
     )
     """)
 
