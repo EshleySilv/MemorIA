@@ -23,7 +23,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 modelo = genai.GenerativeModel("gemini-flash-latest")
 
 def conectar():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("database.db", timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -227,6 +227,8 @@ def avaliar():
     proxima_data_str = proxima_data.strftime("%Y-%m-%d")
 
     conn = conectar()
+
+    conn.execute("PRAGMA journal_mode=WAL")
 
     if tipo == "errei":
         conn.execute("""
@@ -439,6 +441,8 @@ def salvar_card(id):
     resposta = request.form["resposta"]
 
     conn = conectar()
+
+    conn.execute("PRAGMA journal_mode=WAL")
 
     conn.execute("""
         UPDATE flashcards
